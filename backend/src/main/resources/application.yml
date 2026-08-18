@@ -39,7 +39,7 @@ spring:
         dialect: ${DB_DIALECT:org.hibernate.dialect.TiDBDialect}
 
   flyway:
-    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
     url: ${DB_URL}
     user: ${DB_USERNAME}
     password: ${DB_PASSWORD}
