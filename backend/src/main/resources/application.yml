@@ -40,6 +40,9 @@ spring:
 
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:false}
+    url: ${DB_URL}
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     baseline-on-migrate: true
     properties:
       flyway.mysql.generate-lock: false
