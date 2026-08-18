@@ -38,7 +38,6 @@ ADD COLUMN whatsapp_opt_in BOOLEAN DEFAULT FALSE;
 
 
 -- 4. CMS Content Blocks
--- MySQL-specific syntax replaced with H2-compatible syntax
 CREATE TABLE cms_content_blocks (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     page_key VARCHAR(100) NOT NULL,
@@ -46,8 +45,8 @@ CREATE TABLE cms_content_blocks (
     content_type VARCHAR(50) NOT NULL, -- TEXT, RICH_TEXT, IMAGE_URL
     content_value TEXT,
     updated_by BIGINT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_page_block UNIQUE (page_key, block_key),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_page_block (page_key, block_key),
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
