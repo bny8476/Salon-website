@@ -44,7 +44,6 @@ spring:
     user: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     baseline-on-migrate: true
-    baseline-version: 0
 
 server:
   port: ${PORT:8080}
