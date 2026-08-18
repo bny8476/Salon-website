@@ -7,15 +7,18 @@ import org.springframework.context.annotation.Configuration;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
  * Pre-creates the Flyway schema history table using TiDB-compatible DDL.
- * 
+ *
  * TiDB does not support CREATE TABLE ... SELECT, which Flyway's MySQL module
  * uses internally when creating the flyway_schema_history table during baseline.
- * This initializer creates the table manually before Flyway runs, avoiding the issue.
+ * This initializer creates the table and inserts a baseline row manually before
+ * Flyway runs, so Flyway sees an already-baselined database and skips the
+ * problematic auto-creation path entirely.
  */
 @Configuration
 public class FlywaySchemaHistoryInitializer {
@@ -24,7 +27,11 @@ public class FlywaySchemaHistoryInitializer {
     public FlywayConfigurationCustomizer flywayConfigurationCustomizer(DataSource dataSource) {
         return configuration -> {
             try {
-                ensureSchemaHistoryTable(dataSource, configuration.getTable());
+                String table = configuration.getTable();
+                if (table == null || table.isBlank()) {
+                    table = "flyway_schema_history";
+                }
+                ensureSchemaHistoryTable(dataSource, table);
             } catch (Exception e) {
                 // Log but don't fail — let Flyway handle it if possible
                 System.err.println("Warning: Could not pre-create Flyway schema history table: " + e.getMessage());
@@ -33,14 +40,10 @@ public class FlywaySchemaHistoryInitializer {
     }
 
     private void ensureSchemaHistoryTable(DataSource dataSource, String tableName) throws Exception {
-        if (tableName == null || tableName.isBlank()) {
-            tableName = "flyway_schema_history";
-        }
-
         try (Connection conn = dataSource.getConnection()) {
             // Check if the table already exists
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, null, tableName, new String[]{"TABLE"})) {
+            try (ResultSet rs = meta.getTables(conn.getCatalog(), null, tableName, new String[]{"TABLE"})) {
                 if (rs.next()) {
                     return; // Table already exists, nothing to do
                 }
@@ -69,6 +72,21 @@ public class FlywaySchemaHistoryInitializer {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(createTableSql);
                 System.out.println("Pre-created Flyway schema history table: " + tableName);
+            }
+
+            // Insert a baseline row so Flyway recognises the database as already baselined
+            String insertBaselineSql = String.format(
+                "INSERT INTO `%s` " +
+                "(`installed_rank`, `version`, `description`, `type`, `script`, `checksum`, " +
+                " `installed_by`, `installed_on`, `execution_time`, `success`) " +
+                "VALUES (1, '0', '<< Flyway Baseline >>', 'BASELINE', '<< Flyway Baseline >>', NULL, " +
+                "        'FlywaySchemaHistoryInitializer', CURRENT_TIMESTAMP, 0, 1)",
+                tableName
+            );
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(insertBaselineSql);
+                System.out.println("Inserted Flyway baseline row (version=0) into: " + tableName);
             }
         }
     }
