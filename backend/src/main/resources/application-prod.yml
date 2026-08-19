@@ -46,9 +46,9 @@ logging:
     org.flywaydb: DEBUG
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:dGhpcy1pcy1hLXZlcnktc2VjdXJlLWp3dC1zZWNyZXQta2V5LXRoYXQtaXMtMjU2LWJpdHM=}
   
 razorpay:
   key:
-    secret: ${RAZORPAY_KEY_SECRET}
-  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}
+    secret: ${RAZORPAY_KEY_SECRET:dummy_razorpay_secret}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:dummy_webhook_secret}
