@@ -12,10 +12,20 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+
 @Configuration
 @EnableScheduling
 @RequiredArgsConstructor
 public class ApplicationConfig {
+
+    @Bean
+    public FlywayMigrationStrategy cleanMigrateStrategy() {
+        return flyway -> {
+            flyway.clean();
+            flyway.migrate();
+        };
+    }
 
     private final CustomUserDetailsService customUserDetailsService;
 
