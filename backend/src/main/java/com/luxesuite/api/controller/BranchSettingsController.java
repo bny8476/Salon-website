@@ -28,24 +28,61 @@ public class BranchSettingsController {
 
     @GetMapping("/branch")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public ResponseEntity<?> getBranchSettings(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(required = false) Long branchId) {
-        boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    public ResponseEntity<?> getBranchSettings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) Long branchId) {
+
+        boolean isAdmin = userDetails.getAuthorities()
+                .stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
         Long targetBranchId;
-        
+
+        // Determine the branch
         if (isAdmin) {
+            // Default to Main Branch for now
             targetBranchId = branchId != null ? branchId : 1L;
         } else {
-            Staff staff = staffRepository.findByUserEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new ResourceNotFoundException("No staff profile is linked to this account (" + userDetails.getUsername() + "). Contact an administrator to complete setup."));
+            Staff staff = staffRepository
+                    .findByUserEmail(userDetails.getUsername())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "No staff profile is linked to this account."
+                            ));
+
             if (staff.getBranch() == null) {
-                throw new ConflictException("Your staff profile isn't assigned to a branch yet. Contact an administrator to assign one.");
+                throw new ConflictException(
+                        "Your staff profile isn't assigned to a branch yet."
+                );
             }
+
             targetBranchId = staff.getBranch().getId();
         }
-        
-        return settingsRepository.findByBranchId(targetBranchId)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+
+        // Find existing settings or create defaults
+        BranchSettings settings = settingsRepository
+                .findByBranchId(targetBranchId)
+                .orElseGet(() -> {
+                    // Make sure the branch exists
+                    Branch branch = branchRepository
+                            .findById(targetBranchId)
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "Branch not found: " + targetBranchId
+                                    ));
+
+                    // Create default settings
+                    BranchSettings newSettings = new BranchSettings();
+                    newSettings.setBranch(branch);
+                    newSettings.setBusinessName(branch.getName());
+                    newSettings.setCurrency("INR");
+                    newSettings.setTimeZone("Asia/Kolkata");
+                    newSettings.setMaintenanceMode(false);
+
+                    return settingsRepository.save(newSettings);
+                });
+
+        return ResponseEntity.ok(com.luxesuite.api.dto.BranchSettingsDto.fromEntity(settings));
     }
 
     @PostMapping("/branch")
