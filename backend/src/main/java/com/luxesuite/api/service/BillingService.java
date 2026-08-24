@@ -46,6 +46,7 @@ public class BillingService {
     private final SubscriptionService subscriptionService;
     private final CustomerRepository customerRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final ProcessedWebhookRepository processedWebhookRepository;
     private final MeterRegistry meterRegistry;
 
     @Value("${stripe.key.secret}")
@@ -276,6 +277,19 @@ public class BillingService {
     public void handleStripeWebhook(String payload, String sigHeader) {
         try {
             Event event = Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
+            
+            // Webhook Idempotency Check
+            String eventId = event.getId();
+            if (eventId != null) {
+                if (processedWebhookRepository.findByEventIdAndProvider(eventId, "STRIPE").isPresent()) {
+                    return; // Already processed
+                }
+                ProcessedWebhook processed = new ProcessedWebhook();
+                processed.setEventId(eventId);
+                processed.setProvider("STRIPE");
+                processed.setProcessedAt(java.time.LocalDateTime.now());
+                processedWebhookRepository.save(processed);
+            }
 
             if ("payment_intent.succeeded".equals(event.getType())) {
                 meterRegistry.counter("payment.success", "gateway", "stripe").increment();
@@ -398,6 +412,27 @@ public class BillingService {
             
             JSONObject event = new JSONObject(payload);
             String eventType = event.getString("event");
+            
+            // Webhook Idempotency Check (Razorpay event ID is optionally in 'account_id' or we can use payment ID as deduplication key)
+            // The best idempotency for Razorpay is the payment.entity.id + order.entity.id. But Razorpay webhooks often contain 'x-razorpay-event-id' header or payload ID.
+            // Let's check the event payload for 'id' or we can extract it from the payload JSON.
+            String eventId = null;
+            if (event.has("id")) {
+                eventId = event.getString("id");
+            } else if (event.has("payload") && event.getJSONObject("payload").has("payment")) {
+                eventId = "rzp_evt_" + event.getJSONObject("payload").getJSONObject("payment").getJSONObject("entity").getString("id") + "_" + eventType;
+            }
+            
+            if (eventId != null) {
+                if (processedWebhookRepository.findByEventIdAndProvider(eventId, "RAZORPAY").isPresent()) {
+                    return; // Already processed
+                }
+                ProcessedWebhook processed = new ProcessedWebhook();
+                processed.setEventId(eventId);
+                processed.setProvider("RAZORPAY");
+                processed.setProcessedAt(java.time.LocalDateTime.now());
+                processedWebhookRepository.save(processed);
+            }
             
             if ("order.paid".equals(eventType) || "payment.captured".equals(eventType)) {
                 meterRegistry.counter("payment.success", "gateway", "razorpay").increment();

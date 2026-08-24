@@ -38,8 +38,9 @@ public class NotificationScheduler {
     private final WhatsAppMessageLogRepository whatsappLogRepository;
 
     // Run every 15 mins for better precision
-    @Scheduled(fixedRate = 900000)
-    public void processReminders() {
+    @Scheduled(fixedRate = 900000) // 15 minutes
+    @net.javacrumbs.shedlock.spring.annotation.SchedulerLock(name = "sendUpcomingAppointmentReminders_lock", lockAtMostFor = "14m", lockAtLeastFor = "1m")
+    public void sendUpcomingAppointmentReminders() {
         LocalDateTime now = LocalDateTime.now();
         log.info("Running Appointment Reminder Job at {}", now);
         
@@ -66,6 +67,7 @@ public class NotificationScheduler {
 
     // --- Post-visit rebooking nudge (runs every hour) ---
     @Scheduled(fixedRate = 3600000)
+    @net.javacrumbs.shedlock.spring.annotation.SchedulerLock(name = "processRebookingNudges_lock", lockAtMostFor = "59m", lockAtLeastFor = "1m")
     public void processRebookingNudges() {
         LocalDateTime now = LocalDateTime.now();
         // Target: appointments completed 2-4 hours ago
@@ -96,6 +98,7 @@ public class NotificationScheduler {
 
     // --- Win-back campaign for lapsed clients (runs daily at 9 AM) ---
     @Scheduled(cron = "0 0 9 * * *")
+    @net.javacrumbs.shedlock.spring.annotation.SchedulerLock(name = "processWinBackCampaigns_lock", lockAtMostFor = "23h", lockAtLeastFor = "1m")
     public void processWinBackCampaigns() {
         LocalDateTime now = LocalDateTime.now();
         // Target: customers whose last completed visit was 58-62 days ago (window)
@@ -130,8 +133,9 @@ public class NotificationScheduler {
     }
 
     // --- Birthday offers (runs daily at 8 AM) ---
-    @Scheduled(cron = "0 0 8 * * *")
-    public void processBirthdayOffers() {
+    @Scheduled(cron = "0 0 9 * * *") // Every day at 9 AM
+    @net.javacrumbs.shedlock.spring.annotation.SchedulerLock(name = "sendBirthdayGreetings_lock", lockAtMostFor = "23h", lockAtLeastFor = "1m")
+    public void sendBirthdayGreetings() {
         LocalDate today = LocalDate.now();
         log.info("Running Birthday Offers Job for {}", today);
 

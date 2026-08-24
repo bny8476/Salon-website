@@ -62,7 +62,7 @@ public class InventoryService {
     public InventoryDto updateStock(Long productId, Long branchId, int quantityAdjustment) {
         securityUtils.validateBranchAccess(branchId);
 
-        Inventory inventory = inventoryRepository.findByProductIdAndBranchId(productId, branchId)
+        Inventory inventory = inventoryRepository.findByProductIdAndBranchIdForUpdate(productId, branchId)
                 .orElseGet(() -> createNewInventory(productId, branchId));
         
         int newQuantity = inventory.getQuantity() + quantityAdjustment;

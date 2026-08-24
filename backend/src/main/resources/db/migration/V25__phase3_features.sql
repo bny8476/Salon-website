@@ -46,7 +46,7 @@ CREATE TABLE cms_content_blocks (
     content_value TEXT,
     updated_by BIGINT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_page_block (page_key, block_key),
+    CONSTRAINT uk_page_block UNIQUE (page_key, block_key),
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
 );
 

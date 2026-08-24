@@ -78,6 +78,21 @@ public class AppointmentService {
             throw new BadRequestException("No services selected");
         }
         
+        // Lock staff upfront in deterministic order to prevent deadlocks
+        List<Long> distinctStaffIds = dto.getServices().stream()
+                .map(com.luxesuite.api.dto.AppointmentItemDto::getStaffId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+                
+        java.util.Map<Long, Staff> lockedStaffMap = new java.util.HashMap<>();
+        for (Long staffId : distinctStaffIds) {
+            Staff staff = staffRepository.findByIdForUpdate(staffId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffId));
+            lockedStaffMap.put(staffId, staff);
+        }
+
         LocalDateTime currentStartTime = dto.getServices().get(0).getStartTime();
         boolean hasSpa = false;
         boolean hasSalon = false;
@@ -89,8 +104,10 @@ public class AppointmentService {
             if ("SPA".equals(service.getBusinessType())) hasSpa = true;
             if ("SALON".equals(service.getBusinessType())) hasSalon = true;
             
-            Staff staff = staffRepository.findByIdForUpdate(itemDto.getStaffId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+            Staff staff = lockedStaffMap.get(itemDto.getStaffId());
+            if (staff == null) {
+                throw new ResourceNotFoundException("Staff not found");
+            }
 
             // Check if staff can perform this service
             if (!staff.getServices().contains(service)) {
@@ -258,6 +275,19 @@ public class AppointmentService {
         LocalDateTime currentOriginalStartTime = appointment.getServices().get(0).getStartTime();
         if (LocalDateTime.now().plusHours(24).isAfter(currentOriginalStartTime)) {
             throw new BadRequestException("Appointments must be rescheduled at least 24 hours in advance.");
+        }
+        
+        // Lock staff upfront in deterministic order to prevent deadlocks
+        List<Long> distinctStaffIds = appointment.getServices().stream()
+                .map(item -> item.getStaff().getId())
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+                
+        for (Long staffId : distinctStaffIds) {
+            staffRepository.findByIdForUpdate(staffId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Staff not found: " + staffId));
         }
 
         LocalDateTime currentStartTime = newStartTime;

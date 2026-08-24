@@ -16,7 +16,7 @@ public class SseController {
 
     private final SseService sseService;
 
-    @GetMapping("/stream")
+    @GetMapping(value = "/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents() {
         String clientId = UUID.randomUUID().toString();
         return sseService.subscribe(clientId);

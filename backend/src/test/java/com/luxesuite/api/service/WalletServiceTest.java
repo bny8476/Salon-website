@@ -111,7 +111,7 @@ public class WalletServiceTest {
     void verifyRazorpayTopup_Success() {
         when(securityUtils.getCurrentUserId()).thenReturn(100L);
         when(customerRepository.findByUserId(100L)).thenReturn(Optional.of(testCustomer));
-        when(walletRepository.findByCustomerId(1L)).thenReturn(Optional.of(testWallet));
+        when(walletRepository.findByCustomerIdForUpdate(1L)).thenReturn(Optional.of(testWallet));
         when(walletRepository.save(any(Wallet.class))).thenReturn(testWallet);
         
         try (MockedStatic<Utils> utilsMockedStatic = mockStatic(Utils.class)) {

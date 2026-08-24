@@ -17,7 +17,7 @@ public class SseService {
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(String clientId) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // Infinite timeout
+        SseEmitter emitter = new SseEmitter(-1L); // Infinite timeout
         
         emitter.onCompletion(() -> emitters.remove(clientId));
         emitter.onTimeout(() -> emitters.remove(clientId));

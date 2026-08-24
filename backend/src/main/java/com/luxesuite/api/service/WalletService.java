@@ -131,7 +131,7 @@ public class WalletService {
     public void processTopup(Long userId, BigDecimal amount, String transactionRef) {
         Customer customer = customerRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        Wallet wallet = walletRepository.findByCustomerId(customer.getId())
+        Wallet wallet = walletRepository.findByCustomerIdForUpdate(customer.getId())
                 .orElseGet(() -> createEmptyWallet(customer));
                 
         wallet.setBalance(wallet.getBalance().add(amount));
@@ -150,7 +150,7 @@ public class WalletService {
 
     @Transactional
     public BigDecimal debit(Long customerId, BigDecimal amount, Long invoiceId) {
-        Wallet wallet = walletRepository.findByCustomerId(customerId)
+        Wallet wallet = walletRepository.findByCustomerIdForUpdate(customerId)
                 .orElseThrow(() -> new BadRequestException("Wallet not found"));
                 
         if (wallet.getBalance().compareTo(amount) < 0) {
@@ -181,7 +181,7 @@ public class WalletService {
     public void credit(Long customerId, BigDecimal amount, String reason) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        Wallet wallet = walletRepository.findByCustomerId(customerId)
+        Wallet wallet = walletRepository.findByCustomerIdForUpdate(customerId)
                 .orElseGet(() -> createEmptyWallet(customer));
                 
         wallet.setBalance(wallet.getBalance().add(amount));
