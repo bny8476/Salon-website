@@ -1,11 +1,14 @@
 package com.luxesuite.api.config;
 
 import com.luxesuite.api.security.JwtAuthenticationFilter;
+import com.luxesuite.api.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -35,7 +38,6 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CsrfCookieFilter csrfCookieFilter;
-    private final AuthenticationProvider authenticationProvider;
     private final Environment env;
 
     @Value("${jwt.secret:dGhpcy1pcy1hLXZlcnktc2VjdXJlLWp3dC1zZWNyZXQta2V5LXRoYXQtaXMtMjU2LWJpdHM=}")
@@ -53,6 +55,16 @@ public class SecurityConfig {
     @Bean
     public RateLimitFilter rateLimitFilter() {
         return new RateLimitFilter();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider(
+            CustomUserDetailsService customUserDetailsService,
+            PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(customUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        return authProvider;
     }
 
     @PostConstruct
@@ -74,7 +86,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
         if (Arrays.asList(env.getActiveProfiles()).contains("prod")) {
             http.requiresChannel(channel -> channel.anyRequest().requiresSecure());
         }
