@@ -62,7 +62,8 @@ export const NotificationBell = () => {
 
   // Listen to SSE for real-time notification events
   useEffect(() => {
-    const source = new EventSource('/api/v1/events/stream', { withCredentials: true });
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string || '').replace(/\/$/, '');
+    const source = new EventSource(`${baseUrl}/api/v1/events/stream`, { withCredentials: true });
     source.addEventListener('new_notification', () => {
       queryClient.invalidateQueries({ queryKey: ['myNotifications'] });
       toast({ title: 'New Notification', description: 'You have a new notification.', variant: 'default' });

@@ -298,7 +298,8 @@ function App() {
     // Always use the relative path so the Vercel proxy handles routing.
     // This makes the request same-origin from the browser's perspective,
     // ensuring cookies are always sent without any SameSite restrictions.
-    const eventSource = new EventSource('/api/v1/events/stream', { withCredentials: true });
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string || '').replace(/\/$/, '');
+    const eventSource = new EventSource(`${baseUrl}/api/v1/events/stream`, { withCredentials: true });
 
     eventSource.addEventListener('appointment_booked', () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
