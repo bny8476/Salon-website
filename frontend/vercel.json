@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://salon-website-o8qe.onrender.com/api/v1/:path*"
+      "destination": "https://salon-website-8qqu.onrender.com/api/v1/:path*"
     },
     {
       "source": "/(.*)",

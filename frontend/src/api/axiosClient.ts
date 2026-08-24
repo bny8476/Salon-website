@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 // Ensure the base URL always ends with /api/v1 regardless of how VITE_API_BASE_URL is set.
-// e.g. "https://salon-website-o8qe.onrender.com" → "https://salon-website-o8qe.onrender.com/api/v1"
+// e.g. "https://salon-website-8qqu.onrender.com" → "https://salon-website-8qqu.onrender.com/api/v1"
 function resolveBaseUrl(): string {
   // In production, force relative URL to use the Vercel rewrite proxy.
   // This prevents third-party cookie blocking issues from cross-origin requests.
