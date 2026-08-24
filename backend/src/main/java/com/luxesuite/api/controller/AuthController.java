@@ -44,17 +44,17 @@ public class AuthController {
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", authResponse.getAccessToken())
                 .httpOnly(true)
                 .secure(secureCookie)
+                .sameSite("None")
                 .path("/")
-                .maxAge(24 * 60 * 60)
-                .sameSite("None")  // None required for cross-site XHR (Vercel → Render)
+                .maxAge(7 * 24 * 60 * 60) // 7 days
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", authResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(secureCookie)
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .sameSite("None")  // None required for cross-site XHR (Vercel → Render)
+                .sameSite("None")
+                .path("/api/v1/auth/refresh")
+                .maxAge(30 * 24 * 60 * 60) // 30 days
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
